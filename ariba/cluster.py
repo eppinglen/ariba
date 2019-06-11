@@ -4,10 +4,9 @@ import os
 import atexit
 import random
 import math
-import shutil
 import sys
 import pyfastaq
-from ariba import assembly, assembly_compare, assembly_variants, external_progs, flag, mapping, report, samtools_variants
+from ariba import assembly, assembly_compare, assembly_variants, common, external_progs, flag, mapping, report, samtools_variants
 
 class Error (Exception): pass
 
@@ -130,7 +129,7 @@ class Cluster:
             self.log_fh = None
 
         if extern_progs is None:
-            self.extern_progs = external_progs.ExternalProgs()
+            self.extern_progs = external_progs.ExternalProgs(using_spades=self.assembler == 'spades')
         else:
             self.extern_progs = extern_progs
 
@@ -369,7 +368,7 @@ class Cluster:
             self._clean_file(self.reads_for_assembly2)
             if self.clean:
                 print('Deleting Assembly directory', self.assembly_dir, file=self.log_fh, flush=True)
-                shutil.rmtree(self.assembly_dir,ignore_errors=True)
+                common.rmtree(self.assembly_dir)
 
 
         if self.assembled_ok and self.assembly.ref_seq_name is not None:

@@ -1,10 +1,9 @@
 import os
 import sys
-import shutil
 import pyfastaq
 import pymummer
 import fermilite_ariba
-from ariba import common, faidx, mapping, bam_parse, external_progs, ref_seq_chooser
+from ariba import common, mapping, bam_parse, external_progs, ref_seq_chooser
 import shlex
 
 class Error (Exception): pass
@@ -59,7 +58,7 @@ class Assembly:
         self.threads = threads
 
         if extern_progs is None:
-            self.extern_progs = external_progs.ExternalProgs()
+            self.extern_progs = external_progs.ExternalProgs(using_spades=self.assembler == 'spades')
         else:
             self.extern_progs = extern_progs
 
@@ -141,7 +140,7 @@ class Assembly:
                 spades_out_seq_base = "contigs.fasta"
             else:
                 raise ValueError("Unknown spades_mode value: {}".format(self.spades_mode))
-            asm_cmd = [spades_exe, "-t", str(self.threads), "--pe1-1", self.reads1, "--pe1-2", self.reads2, "-o", self.assembler_dir] + \
+            asm_cmd = ['python3', spades_exe, "-t", str(self.threads), "--pe1-1", self.reads1, "--pe1-2", self.reads2, "-o", self.assembler_dir] + \
                 spades_options
             asm_ok,err = common.syscall(asm_cmd, verbose=True, verbose_filehandle=self.log_fh, shell=False, allow_fail=True)
             if not asm_ok:
@@ -197,7 +196,7 @@ class Assembly:
                             self.assembled_ok = True
             if self.clean:
                 print('Deleting assembly directory', self.assembler_dir, file=self.log_fh)
-                shutil.rmtree(self.assembler_dir,ignore_errors=True)
+                common.rmtree(self.assembler_dir)
         finally:
             os.chdir(cwd)
 

@@ -2,15 +2,15 @@ import signal
 import time
 import os
 import copy
+import json
 import tempfile
 import pickle
 import itertools
 import sys
-import shutil
 import multiprocessing
 import pyfastaq
 import minimap_ariba
-from ariba import cluster, common, histogram, mlst_reporter, read_store, report, report_filter, reference_data
+from ariba import cluster, common, histogram, mlst_reporter, read_store, report, report_filter, reference_data, tb
 
 class Error (Exception): pass
 
@@ -42,7 +42,7 @@ def _run_cluster(obj, verbose, clean, fails_dir, remaining_clusters, remaining_c
             print('Deleting cluster dir', obj.root_dir, flush=True)
         if os.path.exists(obj.root_dir):
             try:
-                shutil.rmtree(obj.root_dir)
+                common.rmtree(obj.root_dir)
             except:
                 pass
 
@@ -106,6 +106,7 @@ class Clusters:
         self.report_file_filtered = os.path.join(self.outdir, 'report.tsv')
         self.mlst_reports_prefix = os.path.join(self.outdir, 'mlst_report')
         self.mlst_profile_file = os.path.join(self.refdata_dir, 'pubmlst.profile.txt')
+        self.tb_resistance_calls_file = os.path.join(self.outdir, 'tb.resistance.json')
         self.catted_assembled_seqs_fasta = os.path.join(self.outdir, 'assembled_seqs.fa.gz')
         self.catted_genes_matching_refs_fasta = os.path.join(self.outdir, 'assembled_genes.fa.gz')
         self.catted_assemblies_fasta = os.path.join(self.outdir, 'assemblies.fa.gz')
@@ -167,7 +168,7 @@ class Clusters:
         if self.verbose:
             print('Temporary directory:', self.tmp_dir)
 
-        for i in [x for x in dir(signal) if x.startswith("SIG") and x not in {'SIGCHLD', 'SIGCLD'}]:
+        for i in [x for x in dir(signal) if x.startswith("SIG") and x not in {'SIGCHLD', 'SIGCLD', 'SIGPIPE'}]:
             try:
                 signum = getattr(signal, i)
                 signal.signal(signum, self._receive_signal)
@@ -227,12 +228,14 @@ class Clusters:
         fasta_file = os.path.join(indir, '02.cdhit.all.fa')
         metadata_file = os.path.join(indir, '01.filter.check_metadata.tsv')
         info_file = os.path.join(indir, '00.info.txt')
+        parameters_file = os.path.join(indir, '00.params.json')
         clusters_pickle_file = os.path.join(indir, '02.cdhit.clusters.pickle')
         params = Clusters._load_reference_data_info_file(info_file)
         refdata = reference_data.ReferenceData(
             [fasta_file],
             [metadata_file],
             genetic_code=params['genetic_code'],
+            parameters_file=parameters_file,
         )
 
         with open(clusters_pickle_file, 'rb') as f:
@@ -557,7 +560,7 @@ class Clusters:
 
     def _clean(self):
         if self.clean:
-            shutil.rmtree(self.fails_dir,ignore_errors=True)
+            common.rmtree(self.fails_dir)
 
             try:
                 self.tmp_dir_obj.cleanup()
@@ -566,7 +569,7 @@ class Clusters:
 
             if self.verbose:
                 print('Deleting Logs directory', self.logs_dir)
-            shutil.rmtree(self.logs_dir,ignore_errors=True)
+            common.rmtree(self.logs_dir)
 
             try:
                 if self.verbose:
@@ -586,6 +589,13 @@ class Clusters:
                 print('\nMaking MLST reports', flush=True)
             reporter = mlst_reporter.MlstReporter(ariba_report_tsv, mlst_profile_file, outprefix)
             reporter.run()
+
+
+    @classmethod
+    def _write_tb_resistance_calls_json(cls, ariba_report_tsv, outfile):
+        calls = tb.report_to_resistance_dict(ariba_report_tsv)
+        with open(outfile, 'w') as f:
+            json.dump(calls, f, sort_keys=True, indent=4)
 
 
     def write_versions_file(self, original_dir):
@@ -667,6 +677,9 @@ class Clusters:
             self._clean()
 
             Clusters._write_mlst_reports(self.mlst_profile_file, self.report_file_filtered, self.mlst_reports_prefix, verbose=self.verbose)
+
+            if 'tb' in self.refdata.extra_parameters and self.refdata.extra_parameters['tb']:
+                Clusters._write_tb_resistance_calls_json(self.report_file_filtered, self.tb_resistance_calls_file)
 
             if self.clusters_all_ran_ok and self.verbose:
                 print('\nAll done!\n')

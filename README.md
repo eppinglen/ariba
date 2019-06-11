@@ -4,9 +4,14 @@ Antimicrobial Resistance Identification By Assembly
 
 For how to use ARIBA, please see the [ARIBA wiki page][ARIBA wiki].
 
-[![Build Status](https://travis-ci.org/sanger-pathogens/ariba.svg?branch=master)](https://travis-ci.org/sanger-pathogens/ariba)
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/ssjunnebo/ariba/blob/master/LICENSE)
-[![status](https://img.shields.io/badge/MGEN-10.1099%2Fmgen.0.000131-brightgreen.svg)](http://mgen.microbiologyresearch.org/content/journal/mgen/10.1099/mgen.0.000131)
+[![Build Status](https://travis-ci.org/sanger-pathogens/ariba.svg?branch=master)](https://travis-ci.org/sanger-pathogens/ariba)   
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-brightgreen.svg)](https://github.com/sanger-pathogens/ariba/blob/master/LICENSE)   
+[![status](https://img.shields.io/badge/MGEN-10.1099%2Fmgen.0.000131-brightgreen.svg)](http://mgen.microbiologyresearch.org/content/journal/mgen/10.1099/mgen.0.000131)   
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/recipes/ariba/README.html)  
+[![Container ready](https://img.shields.io/badge/container-ready-brightgreen.svg)](https://quay.io/repository/biocontainers/ariba)  
+[![Docker Build Status](https://img.shields.io/docker/build/sangerpathogens/ariba.svg)](https://hub.docker.com/r/sangerpathogens/ariba)  
+[![Docker Pulls](https://img.shields.io/docker/pulls/sangerpathogens/ariba.svg)](https://hub.docker.com/r/sangerpathogens/ariba)  
+[![codecov](https://codecov.io/gh/sanger-pathogens/ariba/branch/master/graph/badge.svg)](https://codecov.io/gh/sanger-pathogens/ariba)
 
 ## Contents
 * [Introduction](#introduction)
@@ -34,15 +39,15 @@ The input is a FASTA file of reference sequences (can be a mix of genes and nonc
 ## Quick Start
 Get reference data, for instance from [CARD](https://card.mcmaster.ca/). See [getref](https://github.com/sanger-pathogens/ariba/wiki/Task%3A-getref) for a full list.
 
-    ariba getref card out.card
+    ariba getref ncbi out.ncbi
 
 Prepare reference data for ARIBA:
 
-    ariba prepareref -f out.card.fa -m out.card.tsv out.card.prepareref
+    ariba prepareref -f out.ncbi.fa -m out.ncbi.tsv out.ncbi.prepareref
 
 Run local assemblies and call variants:
 
-    ariba run out.card.prepareref reads1.fastq reads2.fastq out.run
+    ariba run out.ncbi.prepareref reads1.fastq reads2.fastq out.run
 
 Summarise data from several runs:
 
@@ -55,7 +60,7 @@ Please read the [ARIBA wiki page][ARIBA wiki] for full usage instructions.
 If you encounter an issue when installing ARIBA please contact your local system administrator. If you encounter a bug please log it [here](https://github.com/sanger-pathogens/ariba/issues) or email us at ariba-help@sanger.ac.uk.
 
 ### Required dependencies
-  * [Python3][python] version >= 3.3.2
+  * [Python3][python] version >= 3.6.0
   * [Bowtie2][bowtie2] version >= 2.1.0
   * [CD-HIT][cdhit] version >= 4.6
   * [MUMmer][mummer] version >= 3.23
@@ -64,10 +69,11 @@ ARIBA also depends on several Python packages, all of which are available
 via pip. Installing ARIBA with pip3 will get these automatically if they
 are not already installed:
   * dendropy >= 4.2.0
-  * matplotlib (no minimum version required, but only tested on 2.0.0)
+  * matplotlib>=3.1.0
   * pyfastaq >= 3.12.0
   * pysam >= 0.9.1
   * pymummer >= 0.10.1
+  * biopython
 
 ### Using pip3
 Install ARIBA using pip:
@@ -79,9 +85,15 @@ Download the latest release from this github repository or clone it. Run the tes
 
     python3 setup.py test
 
+**Note for OS X:** The tests require gawk which will need to be installed separately, e.g. via Homebrew.
+
 If the tests all pass, install:
 
     python3 setup.py install
+
+Alternatively, install directly from github using:
+
+    pip3 install git+https://github.com/sanger-pathogens/ariba.git #--user
 
 ### Docker
 ARIBA can be run in a Docker container. First install Docker, then install ARIBA:
@@ -91,6 +103,8 @@ ARIBA can be run in a Docker container. First install Docker, then install ARIBA
 To use ARIBA use a command like this (substituting in your directories), where your files are assumed to be stored in /home/ubuntu/data:
 
     docker run --rm -it -v /home/ubuntu/data:/data sangerpathogens/ariba ariba -h
+
+When calling Ariba via Docker you'll also need to add **/data/** in front of all the passed in file or directory names (e.g. /data/my_output_folder) as that's where Ariba expects to find its data within the container.
 
 
 ### Debian (testing)
@@ -132,9 +146,9 @@ Note that ARIBA also runs `bowtie2-build`, for which it uses the
 it would try to use
 
     $HOME/bowtie2-2.1.0/bowtie2-build
- 
+
 ## Temporary files
- 
+
 ARIBA can temporarily make a large number of files whilst running, which
 are put in a temporary directory made by ARIBA.  The total size of these
 files is small, but there can be a many of them. This can be a
@@ -213,5 +227,3 @@ Microbial Genomics 2017. doi: [110.1099/mgen.0.000131](http://mgen.microbiologyr
   [ARIBA wiki]: https://github.com/sanger-pathogens/ariba/wiki
   [mummer]: http://mummer.sourceforge.net/
   [python]: https://www.python.org/
-
-
